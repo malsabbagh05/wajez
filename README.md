@@ -11,69 +11,109 @@ Wajez is a powerful text analysis and summarization tool that helps you extract 
 - Multi-language support (English/Arabic)
 - Deep Thinker mode for enhanced analysis
 
-## Project Structure
+## Prerequisites
 
-```
-wajez/
-├── frontend/           # React frontend application
-├── backend/           # Python backend API
-├── .env              # Development environment variables
-├── .env.production   # Production environment variables
-├── vercel.json       # Vercel deployment configuration
-└── README.md         # Project documentation
-```
-
-## Getting Started
-
-### Prerequisites
-
+Before you begin, ensure you have the following installed:
 - Node.js (v14 or higher)
 - Python (v3.8 or higher)
 - npm or yarn
+- Tesseract OCR (for image text extraction)
 
-### Installation
+You'll also need:
+- OpenAI API key
+- DeepSeek API key
+
+## Installation
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/wajez.git
+git clone https://github.com/malsabbagh05/wajez.git
 cd wajez
 ```
 
-2. Install frontend dependencies
-```bash
-cd frontend
-npm install
-```
-
-3. Install backend dependencies
+2. Set up the backend
 ```bash
 cd backend
+# Create and activate a virtual environment (recommended)
+python -m venv venv
+# On Windows
+venv\Scripts\activate
+# On macOS/Linux
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env and add your API keys
 ```
 
-4. Set up environment variables
-- Copy `.env.example` to `.env`
-- Update the variables as needed
+3. Set up the frontend
+```bash
+cd frontend
+# Install dependencies
+npm install
 
-### Development
+# Set up environment variables
+cp .env.example .env
+```
+
+## Configuration
+
+### Backend Configuration
+Edit `backend/.env` with your API keys:
+```env
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+PORT=5000
+```
+
+### Frontend Configuration
+Edit `frontend/.env`:
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+## Running the Application
 
 1. Start the backend server
 ```bash
 cd backend
+# Make sure your virtual environment is activated
 python app.py
 ```
 
 2. Start the frontend development server
 ```bash
 cd frontend
-npm start
+npm run dev
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at `http://localhost:5173` (or the URL shown in your terminal)
 
-## Deployment
+## Usage
 
-The frontend is configured for deployment with Vercel. The backend should be deployed separately to your preferred hosting service.
+1. Navigate to the application in your web browser
+2. Upload a document (supported formats: PDF, PNG, JPEG, GIF, WebP)
+3. Toggle "Deep Thinker" mode if desired
+4. Click "Summarize" to process the document
+5. View the results and download JSON data if needed
+
+## Troubleshooting
+
+1. If you see "process is not defined" error:
+   - Make sure your frontend `.env` file uses `VITE_` prefix for environment variables
+   - Restart the frontend development server
+
+2. If file upload fails:
+   - Check that the backend server is running
+   - Verify the `VITE_API_URL` points to the correct backend URL
+   - Ensure your API keys are correctly set in the backend `.env` file
+
+3. If OCR doesn't work:
+   - Verify Tesseract OCR is installed on your system
+   - Check the console for specific error messages
 
 ## License
 
