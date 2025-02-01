@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import hashlib
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageEnhance
 import pytesseract
@@ -10,6 +11,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import time
 import tiktoken
+import json
 
 # Load environment variables
 load_dotenv()
@@ -29,6 +31,29 @@ CORS(app, resources={
         "allow_headers": ["Content-Type"]
     }
 })
+
+# Create cache directory if it doesn't exist
+CACHE_DIR = 'cache'
+if not os.path.exists(CACHE_DIR):
+    os.makedirs(CACHE_DIR)
+
+def get_file_hash(file_content):
+    """Generate a hash for the file content"""
+    return hashlib.md5(file_content).hexdigest()
+
+def get_cached_result(file_hash, use_deep_thinker):
+    """Get cached result if it exists"""
+    cache_file = os.path.join(CACHE_DIR, f"{file_hash}_{str(use_deep_thinker)}.json")
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return None
+
+def save_to_cache(file_hash, use_deep_thinker, result):
+    """Save result to cache"""
+    cache_file = os.path.join(CACHE_DIR, f"{file_hash}_{str(use_deep_thinker)}.json")
+    with open(cache_file, 'w', encoding='utf-8') as f:
+        json.dump(result, f, ensure_ascii=False)
 
 # Supported file types
 SUPPORTED_FILE_TYPES = {
@@ -362,49 +387,54 @@ def analyze_file(file_path, use_deep_thinker=False):
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    total_start_time = time.time()
-    
     if 'file' not in request.files:
-        return jsonify({'result': 'No file uploaded'})
+        return jsonify({'error': 'No file provided'}), 400
 
     file = request.files['file']
     if file.filename == '':
-        return jsonify({'result': 'No file selected'})
+        return jsonify({'error': 'No file selected'}), 400
 
-    if file:
+    use_deep_thinker = request.form.get('useDeepThinker', 'false').lower() == 'true'
+    
+    # Generate file hash
+    file_content = file.read()
+    file_hash = get_file_hash(file_content)
+    
+    # Check cache
+    cached_result = get_cached_result(file_hash, use_deep_thinker)
+    if cached_result:
+        return jsonify(cached_result)
+    
+    # Reset file pointer for processing
+    file.seek(0)
+    
+    try:
         filename = secure_filename(file.filename)
-        file_path = os.path.join('uploads', filename)
-        os.makedirs('uploads', exist_ok=True)
+        file_ext = os.path.splitext(filename)[1].lower()
+        
+        if file_ext not in SUPPORTED_FILE_TYPES:
+            return jsonify({'error': 'Unsupported file type'}), 400
+
+        # Save file temporarily
+        file_path = os.path.join('temp', filename)
         file.save(file_path)
 
         try:
-            use_deep_thinker = request.form.get('useDeepThinker', 'false').lower() == 'true'
-            print("\n" + "="*50)
-            print(f"STARTING ANALYSIS: {filename}")
-            print(f"Deep Thinker: {'✓' if use_deep_thinker else '✗'}")
-            print("="*50)
-            
-            analysis_start = time.time()
+            # Process the file
             result = analyze_file(file_path, use_deep_thinker)
-            analysis_end = time.time()
             
-            total_time = time.time() - total_start_time
-            analysis_time = analysis_end - analysis_start
-            
-            print("\n" + "="*50)
-            print("TIMING SUMMARY")
-            print("="*50)
-            print(f"Total Request Time: {total_time:.1f} seconds")
-            print(f"Analysis Time: {analysis_time:.1f} seconds")
-            print(f"Overhead Time: {(total_time - analysis_time):.1f} seconds")
-            print("="*50 + "\n")
+            # Save to cache
+            save_to_cache(file_hash, use_deep_thinker, result)
             
             return jsonify(result)
+            
         finally:
+            # Clean up temporary file
             if os.path.exists(file_path):
                 os.remove(file_path)
-    
-    return jsonify({'result': 'Error processing file'})
+                
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     try:
