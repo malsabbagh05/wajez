@@ -11,6 +11,37 @@ Wajez is a powerful text analysis and summarization tool that helps you extract 
 - Multi-language support (English/Arabic)
 - Deep Thinker mode for enhanced analysis
 
+## Tech Stack
+
+### Frontend
+- React 18 with TypeScript
+- Vite for build tooling
+- React Router for navigation
+- Modern CSS with CSS Modules
+- LocalStorage for client-side caching
+
+### Backend
+- Python 3.8+ with Flask
+- OpenAI API for text analysis
+- DeepSeek API for enhanced reasoning
+- PyTesseract for OCR (Optical Character Recognition)
+- PyMuPDF for PDF processing
+- File-based caching system
+
+### AI/ML Features
+- GPT-4o for standard analysis
+- DeepSeek Reasoner for deep thinking mode
+- Multi-language OCR (English/Arabic)
+- Intelligent table generation
+- Structured JSON output
+
+### Development Tools
+- Git for version control
+- Environment-based configuration
+- TypeScript for type safety
+- ESLint for code quality
+- Cross-Origin Resource Sharing (CORS) enabled
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
