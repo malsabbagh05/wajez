@@ -1,6 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import '../App.css'
+
+interface CachedResult {
+  result: string;
+  jsonData: string;
+  timestamp: number;
+}
+
+interface FileCache {
+  [key: string]: CachedResult;
+}
 
 function Jiz() {
   const [files, setFiles] = useState<File[]>([])
@@ -10,6 +20,28 @@ function Jiz() {
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
   const [deepThinkerEnabled, setDeepThinkerEnabled] = useState(false)
+  const [fileCache, setFileCache] = useState<FileCache>({})
+
+  // Load cache from localStorage on component mount
+  useEffect(() => {
+    const savedCache = localStorage.getItem('wajez_file_cache')
+    if (savedCache) {
+      setFileCache(JSON.parse(savedCache))
+    }
+  }, [])
+
+  // Save cache to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('wajez_file_cache', JSON.stringify(fileCache))
+  }, [fileCache])
+
+  const generateFileKey = async (file: File, useDeepThinker: boolean): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer()
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    return `${hashHex}_${useDeepThinker}`
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -50,8 +82,21 @@ function Jiz() {
     setProgress(66)
 
     try {
+      const file = files[0]
+      const fileKey = await generateFileKey(file, deepThinkerEnabled)
+      
+      // Check cache first
+      const cachedData = fileCache[fileKey]
+      if (cachedData && (Date.now() - cachedData.timestamp) < 24 * 60 * 60 * 1000) { // 24 hours cache
+        setResult(cachedData.result)
+        setJsonData(cachedData.jsonData)
+        setProgress(100)
+        setLoading(false)
+        return
+      }
+
       const formData = new FormData()
-      formData.append('file', files[0])
+      formData.append('file', file)
       formData.append('useDeepThinker', deepThinkerEnabled.toString())
 
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/analyze`, {
@@ -65,6 +110,17 @@ function Jiz() {
       }
 
       const data = await response.json()
+      
+      // Cache the result
+      setFileCache(prev => ({
+        ...prev,
+        [fileKey]: {
+          result: data.result,
+          jsonData: data.json_data,
+          timestamp: Date.now()
+        }
+      }))
+
       setResult(data.result)
       setJsonData(data.json_data)
       setProgress(100)
