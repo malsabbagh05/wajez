@@ -144,7 +144,7 @@ def process_with_llm(content, use_deep_thinker=False):
                 {"role": "user", "content": f"Analyze this content and create insightful tables showing patterns, statistics, and any missing or incomplete information:\n\n{content}"}
             ],
             temperature=1.3 if use_deep_thinker else 0.7,
-            max_tokens=2000,
+            max_tokens=4000,
         )
         table_time = time.time() - table_start
         table_tokens = {
@@ -188,7 +188,7 @@ def process_with_llm(content, use_deep_thinker=False):
                 {"role": "user", "content": f"Create a meaningful JSON structure from this content:\n\n{content}"}
             ],
             temperature=1.3 if use_deep_thinker else 0.7,
-            max_tokens=2000,
+            max_tokens=4000,
         )
         json_time = time.time() - json_start
         json_tokens = {

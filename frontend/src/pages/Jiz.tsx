@@ -54,7 +54,7 @@ function Jiz() {
       formData.append('file', files[0])
       formData.append('useDeepThinker', deepThinkerEnabled.toString())
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/analyze`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/analyze`, {
         method: 'POST',
         body: formData,
       })
